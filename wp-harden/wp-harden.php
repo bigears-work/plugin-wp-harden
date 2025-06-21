@@ -37,28 +37,26 @@ add_action('init', function () {
 
 
 // 5. Limit login attempts and show remaining tries
-add_action('wp_login_failed', 'wpha_register_failed_login');
-function wpha_register_failed_login($username) {
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $key = 'wpha_login_attempts_' . $ip;
-    $attempts = (int) get_transient($key);
-    set_transient($key, $attempts + 1, 30 * MINUTE_IN_SECONDS);
-}
-
 add_filter('authenticate', function ($user, $username, $password) {
     $ip = $_SERVER['REMOTE_ADDR'];
     $key = 'wpha_login_attempts_' . $ip;
     $attempts = (int) get_transient($key);
     $max_attempts = 5;
 
-    if ($attempts >= $max_attempts) {
-        return new WP_Error('too_many_attempts', __('Too many failed login attempts. Please try again in 30 minutes.'));
-    }
+    if (is_wp_error($user)) {
+        // Failed login
+        $new_attempts = $attempts + 1;
+        set_transient($key, $new_attempts, 30 * MINUTE_IN_SECONDS);
 
-    if ($attempts > 0) {
-        $remaining = $max_attempts - $attempts;
+        if ($new_attempts >= $max_attempts) {
+            return new WP_Error('too_many_attempts', __('Too many failed login attempts. Please try again in 30 minutes.'));
+        }
+
+        $remaining = $max_attempts - $new_attempts;
         return new WP_Error('login_warning', sprintf(__('Incorrect credentials. You have %d attempt(s) remaining.'), $remaining));
     }
 
+    // Successful login → reset counter
+    delete_transient($key);
     return $user;
 }, 30, 3);
