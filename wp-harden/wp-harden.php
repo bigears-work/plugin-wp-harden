@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP Harden
  * Description: Simple Plugin to harden WP installations
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: Big Ears Webagentur
  * Author URI: https://bigears.work
  * License: GPL2
@@ -30,6 +30,11 @@ add_filter('xmlrpc_methods', function () {
     return [];
 });
 add_filter('pings_open', '__return_false');
+
+add_action('init', function () {
+    remove_action('wp_head', 'rsd_link');
+});
+
 
 // 5. Limit login attempts
 add_action('wp_login_failed', 'wpha_register_failed_login');
