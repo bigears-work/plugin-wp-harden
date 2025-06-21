@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP Harden
  * Description: Simple Plugin to harden WP installations
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: Big Ears Webagentur
  * Author URI: https://bigears.work
  * License: GPL2
@@ -36,7 +36,7 @@ add_action('init', function () {
 });
 
 
-// 5. Limit login attempts
+// 5. Limit login attempts and show remaining tries
 add_action('wp_login_failed', 'wpha_register_failed_login');
 function wpha_register_failed_login($username) {
     $ip = $_SERVER['REMOTE_ADDR'];
@@ -49,9 +49,15 @@ add_filter('authenticate', function ($user, $username, $password) {
     $ip = $_SERVER['REMOTE_ADDR'];
     $key = 'wpha_login_attempts_' . $ip;
     $attempts = (int) get_transient($key);
+    $max_attempts = 5;
 
-    if ($attempts >= 5) {
+    if ($attempts >= $max_attempts) {
         return new WP_Error('too_many_attempts', __('Too many failed login attempts. Please try again in 30 minutes.'));
+    }
+
+    if ($attempts > 0) {
+        $remaining = $max_attempts - $attempts;
+        return new WP_Error('login_warning', sprintf(__('Incorrect credentials. You have %d attempt(s) remaining.'), $remaining));
     }
 
     return $user;
